@@ -3,13 +3,13 @@ ahtapot.org.tr:
    server_aliases: ["www.ahtapot.org.tr"]
    listen_ip: "*"
    listen_port: "80"
-   ssl_engine: "on"
+   ssl_engine: "off"
    ssl_disable_protocols: "All -SSLv2 -SSLv3"
    ssl_honor_cipher_order: "On"
    ssl_compression: "off"
    ssl_cipher_suite: "DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384:DHE-RSA-CAMELLIA256-SHA:DHE-RSA-AES256-SHA:ECDHE-RSA-AES256-SHA"
    http_protocol_options: "UnSafe"
-   waf_force_https: "On"
+   waf_force_https: "Off"
    waf_status: "DetectionOnly"
    waf_debug_level: "0"
    preserve_host: "On"
@@ -29,6 +29,15 @@ ahtapot.org.tr:
    proxy_load_balance_health_check_fail: "2"
    waf_disabled_rules: []
    restrict_by_ip: "on"
-   restrict_by_ip_path: "/admin"
-   restricted_ip_list: ["10.20.30.0/29"] 
+   restriction_list:
+      rest01:
+          path: "/wp-admin"
+          allowed_ips: ["10.20.30.0/29"]
+      rest02:
+          path: "/wp-login"
+          allowed_ips: ["10.20.40.0/29"]
+#      rest03:
+#          path:
+#          allowed_ips:
+#   restricted_ip_list: ["10.20.30.0/29"] 
    optimize_access_log: "on"
