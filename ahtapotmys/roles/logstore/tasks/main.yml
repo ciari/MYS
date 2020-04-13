@@ -1,0 +1,129 @@
+---
+#- include: conf_integrity.yml
+
+- name: "Rsyslog kuruluyor"
+  apt:
+    name: "rsyslog"
+    update_cache: yes
+    state: latest
+    
+- name: "Rsyslog Relp eklentisi kuruluyor"
+  apt:
+    name: "rsyslog-relp"
+    update_cache: yes
+    state: latest
+
+- name: "Rsyslog GnuTLS eklentisi kuruluyor"
+  apt:
+    name: "rsyslog-gnutls"
+    update_cache: yes
+    state: latest
+
+- name: "Logrotate kuruluyor"
+  apt:
+    name: "logrotate"
+    update_cache: yes
+    state: latest
+
+- name: "Rsync kuruluyor"
+  apt:
+    name: "rsync"
+    update_cache: yes
+    state: latest
+
+- name: "Oracle JAVA 8 Kuruluyor"
+  apt:
+    name: "oracle-java8-installer=8u101+8u101arm-1~webupd8~2"
+    update_cache: yes
+    state: present
+
+- name: Log Depolama Sunucusu icin Rsyslog konfigurasyonu yapiliyor
+  template:
+    src: "rsyslog.conf.j2"
+    dest: "/etc/rsyslog.conf"
+    owner: root
+    group: root
+    mode: 644
+  register: rsyslog_conf_completed
+
+- name: "Kamu SM imza araci"
+  apt:
+    name: "zamaneconsole=1.0.1"
+    update_cache: yes
+    state: present
+  when: ls_log_signing_enabled|bool == true
+
+# TODO
+#- name: "Filebeat Kuruluyor"
+#  apt:
+#    name: "filebeat"
+#    update_cache: yes
+#    state: present
+  
+- name: "{{ ls_log_signer_log_path }} dizini olusturuluyor"
+  file:
+    path: "{{ ls_log_signer_log_path }}"
+    state: directory
+    mode: '0755'
+    recurse: yes
+  when: ls_log_signing_enabled|bool == true
+
+- name: "{{ ls_log_signer_working_directory }} dizini olusturuluyor"
+  file:
+    path: "{{ ls_log_signer_working_directory }}"
+    state: directory
+    mode: '0755'
+    recurse: yes
+  when: ls_log_signing_enabled|bool == true
+
+- name: "{{ ls_log_signer_signed_directory }} dizini olusturuluyor"
+  file:
+    path: "{{ ls_log_signer_signed_directory }}"
+    state: directory
+    mode: '0755'
+    recurse: yes
+  when: ls_log_signing_enabled|bool == true
+
+- name: "{{ ls_log_signer_invalid_directory }} dizini olusturuluyor"
+  file:
+    path: "{{ ls_log_signer_invalid_directory }}"
+    state: directory
+    mode: '0755'
+    recurse: yes
+  when: ls_log_signing_enabled|bool == true
+
+- name: "{{ ls_log_signer_archive_directory }} dizini olusturuluyor"
+  file:
+    path: "{{ ls_log_signer_archive_directory }}"
+    state: directory
+    mode: '0755'
+    recurse: yes
+  when: ls_log_signing_enabled|bool == true
+  
+- name: "{{ ls_log_signer_archive_invalid_directory }} dizini olusturuluyor"
+  file:
+    path: "{{ ls_log_signer_archive_invalid_directory }}"
+    state: directory
+    mode: '0755'
+    recurse: yes
+  when: ls_log_signing_enabled|bool == true
+
+- name: Signer konfigurasyonu yapilandiriliyor.
+  template:
+        src: "scripts/ahtapot-signer.sh.j2"
+        dest: "/opt/ahtapot-signer.sh"
+        owner: "root"
+        group: "root"
+        mode: "0750"
+  sudo: yes
+  tags: signer 
+
+- name: Signer cron konfigurasyonu yapilandiriliyor
+  cron:
+    name: ahtapot_log_imzala
+    weekday: "2"
+    minute: "0"
+    hour: "12"
+    user: root
+    job: "/opt/ahtapot-signer.sh"
+    cron_file: ahtapot_log_imzala

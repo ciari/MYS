@@ -1,0 +1,37 @@
+---
+ls_tls_enabled: true
+ls_log_signing_enabled: true
+
+ls_rsyslog_tls_authmode: "name"
+ls_rsyslog_tcp_port: "20514"
+ls_rsyslog_udp_port: "514"
+ls_rsyslog_imthreads: "5"
+ls_rsyslog_main_queue_size: "100000000"
+ls_rsyslog_main_queue_worker_threads: "5"
+ls_rsyslog_async_write: "on"
+ls_rsyslog_io_buffer_size: "1024k"
+ls_rsyslog_working_directory: "/var/spool/rsyslog"
+ls_rsyslog_include_path: "/etc/rsyslog.d/*"
+
+ls_log_signer_interval_min: "00" #day, hour, month
+ls_log_signer_interval_hour: "07"
+ls_log_signer_type: "local" #remote , local
+ls_log_signer_remote_user: "tubitak"
+ls_log_signer_remote_pass: "tubitak"
+
+ls_log_signer_working_directory: "/data/log/5651/tmp"
+ls_log_signer_signed_directory: "/data/log/5651/signedlogs"
+ls_log_signer_invalid_directory: "/data/log/5651/invaledlogs"
+ls_log_signer_archive_directory: "/data/log/5651/signedlogsarchive"
+ls_log_signer_archive_invalid_directory: "/data/log/5651/invaledlogsarchive"
+ls_log_signer_log_path: "/data/log"
+ls_log_signer_prefix: "signed_logs"
+
+ls_log_signer_path: "/opt/ZamaneConsole-2.0.5/ZamaneConsole-2.0.5.jar"
+ls_log_signer_proxy_addr: "127.0.0.1"
+ls_log_signer_proxy_port: "3088"
+ls_log_signer_proxy_user: "ahtapotops"
+ls_log_signer_proxy_pass: "ahtapotops"
+
+ls_ossim_ip: "172.16.103.168"
+ls_ossim_corr_ip: ""
