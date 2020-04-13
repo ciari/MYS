@@ -1,0 +1,44 @@
+---
+
+logcoll_listen_port_tcp: 20514
+logcoll_listen_port_udp: 514
+logcoll_tls_enable: true
+logcoll_relp_enable: true
+
+logcoll_auto_gen_certs: true 
+logcoll_disable_ipv6: true
+
+logcoll_use_ossec: true
+logcoll_forward_to_siem: false
+logcoll_user_logstore: true
+logcoll_monitor_files: true
+
+logcoll_use_nxlog: true
+logcoll_use_rsyslog: true
+logcoll_use_tdagent: false
+
+logcoll_siem_fqdn: "siem.demo.ahtapot.org.tr"
+logcoll_logstore_fqdn: "logstore.demo.ahtapot.org.tr"
+logcoll_ca_file: "/etc/ssl/certs/rootCA.pem"
+logcoll_cert_file: "/etc/ssl/certs/logcoll.demo.ahtapot.org.tr.crt"
+logcoll_key_file: "/etc/ssl/private/logcoll.demo.ahtapot.org.tr.key"
+
+logcoll_cert_country: "TR"
+logcoll_cert_state: "Ankara"
+logcoll_cert_location: "Ankara"
+logcoll_cert_organization: "Ahtapot BSGS"
+logcoll_cert_cn: "ahtapot.org.tr"
+
+logcoll_peers:
+  - "waf.demo.ahtapot.org.tr"
+  - "ids.demo.ahtapot.org.tr"
+  - "vpn.demo.ahtapot.org.tr"
+  - "mntr.demo.ahtapot.org.tr"
+  - "prxy.demo.ahtapot.org.tr"
+  - "fw.demo.ahtapot.org.tr"
+  - "hp.demo.ahtapot.org.tr"
+  - "antispam.demo.ahtapot.org.tr"
+  - "logcoll.demo.ahtapot.org.tr"
+  - "ossim.demo.ahtapot.org.tr"
+  - "elk.demo.ahtapot.org.tr"
+

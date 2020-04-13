@@ -1,0 +1,18 @@
+---
+- name: Nxlog yapilandirmasi uygulaniyor.
+  template:
+        src: "services/nxlog.conf.j2"
+        dest: "{{ nxlog_conf_dir }}/nxlog.conf"
+        owner: "nxlog"
+        group: "nxlog"
+        mode: "0640"
+  register: nxlog_conf_completed
+
+- name: Nxlog servisi Baslatiliyor
+  service:
+    name: "nxlog"
+    state: "started"
+    enabled: "yes"
+  notify: restart nxlog
+  register: nxlog_started
+  ignore_errors: "{{ ansible_check_mode }}"

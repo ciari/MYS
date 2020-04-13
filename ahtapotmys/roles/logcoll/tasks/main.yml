@@ -1,0 +1,82 @@
+---
+#- include: conf_integrity.yml
+#
+- name: Sertifika islemleri basliyor
+  include: subtasks/certificates.yml
+  when: logcoll_auto_gen_certs|bool == true
+
+- name: Sysctl kullanilarak IPv6 Kapatiliyor
+  sysctl: name={{ item }} value=1 state=present reload=yes
+  with_items:
+    - net.ipv6.conf.all.disable_ipv6
+    - net.ipv6.conf.default.disable_ipv6
+    - net.ipv6.conf.lo.disable_ipv6
+  when: logcoll_disable_ipv6|bool == true
+
+- name: Ossec HIDS kuruluyor
+  apt:
+    name: ossec-hids
+    update_cache: yes
+    state: latest
+
+- name: Ossec kuruluyor
+  apt:
+    name: alienvault-ossec
+    update_cache: yes
+    state: latest
+  when: logcoll_use_ossec|bool == true
+
+- name: nxlog-ce kuruluyor
+  apt:
+    name: nxlog-ce
+    update_cache: yes
+    state: latest
+  when: logcoll_use_nxlog|bool == true
+
+- name: rsyslog-gnutls kuruluyor
+  apt:
+    name: rsyslog-gnutls
+    update_cache: yes
+    state: latest
+  when: logcoll_use_rsyslog|bool == true
+    
+- name: rsyslog-relp kuruluyor
+  apt:
+    name: rsyslog-relp
+    update_cache: yes
+    state: latest
+  when: logcoll_use_rsyslog|bool == true
+  
+- name: td-agent kuruluyor
+  apt:
+    name: td-agent
+    update_cache: yes
+    state: latest
+  when: logcoll_use_tdagent|bool == true
+
+- name: Ossec Konfigurasyonuna Baslaniyor
+  include: subtasks/ossec.yml
+  when: logcoll_use_ossec|bool == true
+
+- name: NXLog Konfigurasyonuna Baslaniyor
+  include: subtasks/nxlog.yml
+  when: logcoll_use_nxlog|bool == true
+  
+- name: Rsyslog Konfigurasyonuna Baslaniyor
+  include: subtasks/rsyslog.yml
+  when: logcoll_use_rsyslog|bool == true
+  
+- name: Ossec Agent Konfigurasyonuna Baslaniyor
+  include: subtasks/ossec_agent.yml
+  when: logcoll_use_ossec|bool == true
+
+#TODO: Integrate TD-Agent beside Rsyslog
+
+#- name: TD-Agent Konfigurasyonuna Baslaniyor
+#  include: subtasks/tdagent.yml
+#  when: logcoll_use_tdagent|bool == true
+
+- name: Log servisleri ve log dosyalari monitore konfigurasyonuna baslaniyor
+  include: subtasks/monit.yml
+  when: logcoll_monitor_files|bool == true
+

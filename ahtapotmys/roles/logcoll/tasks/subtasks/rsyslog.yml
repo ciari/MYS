@@ -1,0 +1,36 @@
+---
+
+- name: Log Toplama Sunucusu icin Rsyslog konfigurasyonu yapiliyor
+  template:
+    src: "services/rsyslog.conf.j2"
+    dest: "{{ rsyslog_conf_dir }}/rsyslog.conf"
+    owner: root
+    group: root
+    mode: 644
+  register: rsyslog_conf_completed
+  
+#rsyslog_logrotate.j2
+- name: Log Toplama Sunucusu icin Rsyslog konfigurasyonu yapiliyor
+  template:
+    src: "services/rsyslog_logrotate.j2"
+    dest: "/etc/logrotate.d/ahtapot_logcoll"
+    owner: root
+    group: root
+    mode: 644
+  register: rsyslog_logrotate_completed
+
+- name: Log Toplama Sunucusu icin Rsyslog startup servisleri konfigure ediliyor
+  service:
+     name: "rsyslog"
+     state: "started"
+     enabled: "yes"
+  when: "{{ (rsyslog_conf_completed is defined) and (rsyslog_logrotate_completed is defined) }}"
+  register: rsyslog_started
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: rsyslog icin systemd calistirma parametreleri duzenleniyor
+  lineinfile:
+    dest: /lib/systemd/system/rsyslog.service
+    regexp: '^\s*ExecStart=/usr/sbin/rsyslogd -n -iNONE"*$'
+    line: 'ExecStart=/usr/sbin/rsyslogd -n -i "{{ logcoll_rsyslog_pid_path }}"'
+  when: "{{ (rsyslog_conf_completed is defined) and (rsyslog_logrotate_completed is defined) and (logcoll_monitor_files|bool == true)}}"

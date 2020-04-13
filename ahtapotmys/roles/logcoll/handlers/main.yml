@@ -1,0 +1,20 @@
+---
+- name: restart ossec
+  service:
+    name: ossec
+    state: restarted
+
+- name: restart nxlog
+  service:
+    name: nxlog
+    state: restarted
+    
+- name: restart rsyslog
+  service:
+    name: rsyslog
+    state: restarted    
+
+- name: restart monit
+  service:
+    name: monit
+    state: restarted  

@@ -1,0 +1,233 @@
+#################
+#### MODULES ####
+#################
+
+module(load="imuxsock")
+module(load="imklog")
+module(load="imrelp")
+module(load="imfile" mode="{{ logcoll_working_mode }}")
+module(load="imudp" threads="{{ logcoll_imthreads }}")
+module(load="omrelp")
+
+main_queue(
+   queue.size="{{ logcoll_main_queu_size }}"
+   queue.workerthreads="{{ logcoll_main_queu_worker_threads }}"
+)
+
+$DefaultNetstreamDriverCAFile {{ logcoll_ca_file }}
+
+#############################
+### Listening To Clients ####
+#############################
+{% if logcoll_listen_port_udp %}
+input(type="imudp"
+   port="{{ logcoll_listen_port_udp }}"
+   ruleset="LogsFromClients"
+)
+{% endif %}
+
+{% if logcoll_relp_enable %}
+input(type="imrelp"
+   port="{{ logcoll_listen_port_tcp }}"
+   ruleset="LogsFromClients"
+   tls="on"
+   tls.caCert="{{ logcoll_ca_file }}"
+   tls.myCert="{{ logcoll_cert_file }}"
+   tls.myPrivKey="{{ logcoll_key_file }}"
+   tls.authMode="{{ logcoll_tls_auth_mode }}"
+   tls.permittedpeer=["{{ ansible_fqdn }}"{% for peer in logcoll_peers %},"{{ peer }}"{% endfor %}]
+)
+{% endif %}
+
+ruleset(name="LogsFromClients") {
+   if $msg contains 'AV - Alert -' then stop
+
+   if $msg contains 'New USB device found' or $msg contains 'Product' or \
+      $msg contains 'Manufacturer' or $msg contains 'SerialNumber' then {
+      action(name="USB-Log-Yerele-Yazma"
+         type="omfile"
+         file="{{ logcoll_usb_log_location }}"
+         asyncWriting="{{ logcoll_async_writing }}"
+         iobuffersize="{{ logcoll_io_buffer_size }}"
+      )
+   }
+
+   action(name="Butun-Log-Yerele-Yazma"
+      type="omfile"
+      file="{{ logcoll_all_log_location }}"
+      asyncWriting="{{ logcoll_async_writing }}"
+      iobuffersize="{{ logcoll_io_buffer_size }}"
+   )
+
+   action(name="RsyslogSvr-Log-Gonderme"
+      type="omrelp"
+      target="{{ logcoll_logstore_fqdn }}"
+      port="{{ logcoll_listen_port_tcp }}"
+      tls="on"
+      tls.caCert="{{ logcoll_ca_file }}"
+      tls.myCert="{{ logcoll_cert_file }}"
+      tls.myPrivKey="{{ logcoll_key_file }}"
+      tls.authMode="{{ logcoll_tls_auth_mode }}"
+      tls.permittedpeer=["{{ ansible_fqdn }}"]
+      queue.filename="RsyslogSvr_Log"
+      queue.saveonshutdown="{{ logcoll_action_save_on_shutdown }}"
+      queue.type="{{ logcoll_action_queu_type }}"
+      queue.maxfilesize="{{ logcoll_action_queu_max_file_size }}"
+      queue.size="{{ logcoll_action_queu_size }}"
+      queue.workerthreads="{{ logcoll_action_worker_thread }}"
+      action.resumeretrycount="{{ logcoll_action_resume_retry_count }}"
+   )
+   stop
+}
+
+#################################
+### To RsyslogSvr/OSSIM Rules ###
+#################################
+
+ruleset(name="AlertRules") {
+   action(name="RsyslogSvr-Alarm-Gonderme"
+      type="omrelp"
+      target="{{ logcoll_siem_fqdn }}"
+      port="{{ logcoll_listen_port_tcp }}"
+      tls="on"
+      tls.caCert="{{ logcoll_ca_file }}"
+      tls.myCert="{{ logcoll_cert_file }}"
+      tls.myPrivKey="{{ logcoll_key_file }}"
+      tls.authMode="{{ logcoll_tls_auth_mode }}"
+      tls.permittedpeer=["{{ ansible_fqdn }}"]
+      queue.filename="RsyslogSrv_Alarm"
+      queue.saveonshutdown="{{ logcoll_action_save_on_shutdown }}"
+      queue.type="{{ logcoll_action_queu_type }}"
+      queue.maxfilesize="{{ logcoll_action_queu_max_file_size }}"
+      queue.size="{{ logcoll_action_queu_size }}"
+      action.resumeretrycount="{{ logcoll_action_resume_retry_count }}"
+   )
+   action(name="OSSIM-Alarm-Gonderme" 
+      type="omfwd"
+      target="{{ logcoll_siem_fqdn }}"
+      port="{{ logcoll_listen_port_udp }}"
+      protocol="tcp"
+      StreamDriver="gtls"
+      StreamDriverMode="1"
+      StreamDriverAuthMode="anon"
+      queue.filename="Ossim_Alarm"
+      queue.saveonshutdown="{{ logcoll_action_save_on_shutdown }}"
+      queue.type="{{ logcoll_action_queu_type }}"
+      queue.maxfilesize="{{ logcoll_action_queu_max_file_size }}"
+      queue.size="{{ logcoll_action_queu_size }}"
+      action.resumeretrycount="{{ logcoll_action_resume_retry_count }}"
+   )
+   {% if logcoll_monitor_files|bool == true %}
+   action(name="MonitAlarmsRule" 
+      type="omfwd"
+      target="{{ logcoll_siem_fqdn }}"
+      port="{{ logcoll_listen_port_udp }}"
+      protocol="tcp"
+      StreamDriver="gtls"
+      StreamDriverMode="1"
+      StreamDriverAuthMode="anon"
+      queue.filename="Monit_Alarms"
+      queue.saveonshutdown="{{ logcoll_action_save_on_shutdown }}"
+      queue.type="{{ logcoll_action_queu_type }}"
+      queue.maxfilesize="{{ logcoll_action_queu_max_file_size }}"
+      queue.size="{{ logcoll_action_queu_size }}"
+      action.resumeretrycount="{{ logcoll_action_resume_retry_count }}"
+   )   
+   {% endif %}
+   stop
+}
+
+ruleset(name="WinRules") {
+   action(name="RsyslogSvr-Win-Log-Gonderme"
+      type="omrelp"
+      target="{{ logcoll_siem_fqdn }}"
+      port="{{ logcoll_listen_port_tcp }}"
+      tls="on"
+      tls.caCert="{{ logcoll_ca_file }}"
+      tls.myCert="{{ logcoll_cert_file }}"
+      tls.myPrivKey="{{ logcoll_key_file }}"
+      tls.authMode="{{ logcoll_tls_auth_mode }}"
+      tls.permittedpeer=["{{ ansible_fqdn }}"]
+      queue.filename="RsyslogSrv_Win"
+      queue.saveonshutdown="{{ logcoll_action_save_on_shutdown }}"
+      queue.type="{{ logcoll_action_queu_type }}"
+      queue.maxfilesize="{{ logcoll_action_queu_max_file_size }}"
+      queue.size="{{ logcoll_action_queu_size }}"
+      action.resumeretrycount="{{ logcoll_action_resume_retry_count }}"
+   )
+   action(name="OSSIM-Win-Log-Gonderme"
+      type="omfwd"
+      target="{{ logcoll_siem_fqdn }}"
+      port="{{ logcoll_listen_port_udp }}"
+      protocol="tcp"
+      StreamDriver="gtls"
+      StreamDriverMode="1"
+      StreamDriverAuthMode="anon"
+      queue.filename="OSSIM_Win"
+      queue.saveonshutdown="{{ logcoll_action_save_on_shutdown }}"
+      queue.type="{{ logcoll_action_queu_type }}"
+      queue.maxfilesize="{{ logcoll_action_queu_max_file_size }}"
+      queue.size="{{ logcoll_action_queu_size }}"
+      action.resumeretrycount="{{ logcoll_action_resume_retry_count }}"
+   )
+
+   stop
+}
+
+####################################
+### Read Windows Logs and Alerts ###
+####################################
+
+input(type="imfile"
+   file="{{ ossec_alert_log_path }}"
+   tag="ossecAlerts"
+   ruleset="AlertRules"
+)
+
+input(type="imfile"
+   file="{{ nxlog_log_path }}"
+   tag="WindowsLogs"
+   ruleset="WinRules"
+)
+
+{% if logcoll_monitor_files|bool == true %}
+input(type="imfile"
+   file="{{ monit_log_path }}"
+   tag="MonitAlarmsRule"
+   ruleset="MonitAlarmsRule"
+)
+{% endif %}
+auth,authpriv.*                 /var/log/auth.log
+*.*;auth,authpriv.none,kern.!=info      -/var/log/syslog
+#cron.*                         /var/log/cron.log
+daemon.*                        -/var/log/daemon.log
+kern.*;kern.!=info              -/var/log/kern.log
+lpr.*                           -/var/log/lpr.log
+mail.*                          -/var/log/mail.log
+user.*                          -/var/log/user.log
+
+mail.info                       -/var/log/mail.info
+mail.warn                       -/var/log/mail.warn
+mail.err                        /var/log/mail.err
+
+news.crit                       /var/log/news/news.crit
+news.err                        /var/log/news/news.err
+news.notice                     -/var/log/news/news.notice
+
+*.=debug;\
+        auth,authpriv.none;\
+        news.none;mail.none     -/var/log/debug
+*.=info;*.=notice;*.=warn;\
+        auth,authpriv.none;\
+        cron,daemon.none;kern.!=info;\
+        mail,news.none          -/var/log/messages
+
+*.emerg                         :omusrmsg:*
+
+###########################
+#### GLOBAL DIRECTIVES ####
+###########################
+
+
+$WorkDirectory {{ logcoll_working_directory }}
+$IncludeConfig {{ logcoll_rsyslog_include_dir }}/

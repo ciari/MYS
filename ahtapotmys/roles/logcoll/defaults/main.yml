@@ -1,0 +1,89 @@
+---
+
+logcoll_listen_port_tcp: 20514
+logcoll_listen_port_udp: 514
+logcoll_tls_enable: true
+logcoll_relp_enable: true
+logcoll_auto_gen_certs: true 
+logcoll_auto_gen_cert_path: "/etc/ansible/roles/logcoll/files/certificates"
+logcoll_tls_auth_mode: "name"
+
+logcoll_use_ossec: true
+logcoll_use_elk: false
+logcoll_use_siem: false
+logcoll_use_logstore: true
+logcoll_monitor_files: true
+
+logcoll_disable_ipv6: true
+
+logcoll_ca_file: "/etc/ssl/certs/rootCA.pem"
+logcoll_cert_file: "/etc/ssl/certs/logcoll.demo.ahtapot.org.tr.crt"
+logcoll_key_file: "/etc/ssl/private/logcoll.demo.ahtapot.org.tr.key"
+
+logcoll_imthreads: 4 #imthreads
+logcoll_main_queu_size: 100000000 #MainQueueSize
+logcoll_main_queu_worker_threads: 4  #MainQueueWorkerThreads #RsyslogQueueWorkerThreads
+logcoll_async_writing: "on"
+logcoll_io_buffer_size: "1024k"
+logcoll_action_resume_retry_count: "-1"
+logcoll_action_save_on_shutdown: "on"
+logcoll_action_queu_type: "LinkedList"
+logcoll_action_queu_max_file_size: "100m"
+logcoll_action_queu_size: 1000000
+logcoll_action_worker_thread: 4
+logcoll_working_mode: "inotify"
+
+logcoll_working_directory: "/var/spool/rsyslog"
+logcoll_usb_log_location: "/var/log/usb.log"
+logcoll_all_log_location: "/var/log/client.log"
+
+logcoll_rsyslog_pid_path: "/var/run/rsyslog.pid"
+
+ossec_conf_dir: "/var/ossec"
+ossec_alert_log_path: "/var/ossec/logs/alerts/alerts.log"
+
+nxlog_conf_dir: "/etc/nxlog"
+nxlog_log_path: "/var/log/nxlog/client.log"
+
+monit_conf_dir: "/etc/monit/conf-enabled"
+monit_conf: "/etc/monit/monitrc"
+monit_log_path: "/var/log/monit.log"
+
+
+rsyslog_conf_dir: "/etc"
+logcoll_rsyslog_include_dir: "/etc/rsyslog.d"
+logcoll_ossec_email_notification: "no"
+logcoll_ossec_syscheck_frequency: "21600"
+
+logcoll_cert_country: "TR"
+logcoll_cert_state: "Ankara"
+logcoll_cert_location: "Ankara"
+logcoll_cert_organization: "Ahtapot BSGS"
+logcoll_cert_cn: "ahtapot.org.tr"
+
+logcoll_ossec_syscheck_ignore_files:
+  - "/etc/mtab"
+  - "/etc/mnttab"
+  - "/etc/hosts.deny"
+  - "/etc/mail/statistics"
+  - "/etc/random-seed"
+  - "/etc/adjtime"
+  - "/etc/httpd/logs"
+  - "/etc/utmpx"
+  - "/etc/wtmpx"
+  - "/etc/cups/certs"
+  - "/etc/dumpdates"
+  - "/etc/svc/volatile"
+  - "C:\\WINDOWS/System32/LogFiles"
+  - "C:\\WINDOWS/Debug"
+  - "C:\\WINDOWS/WindowsUpdate.log"
+  - "C:\\WINDOWS/iis6.log"
+  - "C:\\WINDOWS/system32/wbem/Logs"
+  - "C:\\WINDOWS/system32/wbem/Repository"
+  - "C:\\WINDOWS/Prefetch"
+  - "C:\\WINDOWS/PCHEALTH/HELPCTR/DataColl"
+  - "C:\\WINDOWS/SoftwareDistribution"
+  - "C:\\WINDOWS/Temp"
+  - "C:\\WINDOWS/system32/config"
+  - "C:\\WINDOWS/system32/spool"
+  - "C:\\WINDOWS/system32/CatRoot"

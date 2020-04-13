@@ -1,0 +1,19 @@
+ check process rsyslogd with pidfile {{ logcoll_rsyslog_pid_path }}
+   start program = "/etc/init.d/rsyslog start"
+   stop  program = "/etc/init.d/rsyslog stop"
+   if 5 restarts with 5 cycles then alert
+
+ check file all_log_file with path {{ logcoll_all_log_location }}
+   if timestamp > 30 minutes then alert
+   
+{% if logcoll_use_ossec|bool == true %}
+
+ check file usb_log_file with path {{ logcoll_usb_log_location }}
+   if timestamp > 30 minutes then alert
+{% endif %}
+
+{% if logcoll_use_nxlog|bool == true %}
+
+ check file nxlog_log_file with path {{ nxlog_log_path }}
+   if timestamp > 30 minutes then alert
+{% endif %}

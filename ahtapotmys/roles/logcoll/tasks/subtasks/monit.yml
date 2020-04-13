@@ -1,0 +1,47 @@
+---
+
+- name: Monit Kuruluyor
+  apt:
+    name: monit
+    update_cache: yes
+    state: latest
+  register: monit_installed
+    
+- name: Monit yapilandirmasi uygulaniyor.
+  template:
+        src: "services/monit_rsyslog.j2"
+        dest: "{{ monit_conf_dir }}/rsyslog"
+        owner: "root"
+        group: "root"
+        mode: "0640"
+  when: monit_installed is defined
+  register: monit_rsyslog_conf_completed
+
+- name: monitrc duzenleniyor 1
+  lineinfile:
+    dest: /etc/monit/monitrc
+    regexp: '^#\s*# set httpd port 2812 and"*$'
+    line: 'set httpd port 2812 and'
+  when: "{{ (monit_installed is defined) and (monit_rsyslog_conf_completed is defined) }}"
+  
+- name: monitrc duzenleniyor 2
+  lineinfile:
+    dest: /etc/monit/monitrc
+    regexp: '^#\s* allow localhost"*$'
+    line: 'allow localhost'
+  when: "{{ (monit_installed is defined) and (monit_rsyslog_conf_completed is defined) }}"
+  
+- name: monitrc duzenleniyor 3
+  lineinfile:
+    dest: /etc/monit/monitrc
+    regexp: '^#\s*     use address localhost"*$'
+    line: 'use address localhost'
+  when: "{{ (monit_installed is defined) and (monit_rsyslog_conf_completed is defined) }}"
+  
+- name: Monit servisi tekrar baslatiliyor
+  service:
+    name: "monit"
+    state: "started"
+    enabled: "yes"
+  notify: restart monit
+

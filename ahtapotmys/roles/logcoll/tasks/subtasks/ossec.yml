@@ -1,0 +1,52 @@
+- name: ossec.conf dosyasi uygulaniyor
+  template:
+    src: "services/ossec.conf.j2"
+    dest: "{{ ossec_conf_dir }}/etc/ossec.conf" #/var/ossec/etc/ossec.conf
+    owner: ossec
+    group: ossec
+    mode: 0640
+  register: ossec_conf_completed
+
+- name: Ossec local decoder uygulaniyor
+  template:
+    src: "services/local_decoder.xml.j2"
+    dest: "{{ ossec_conf_dir }}/etc/local_decoder.xml"
+    owner: www-data
+    group: ossec
+    mode: 0754
+  register: ossec_local_decoder_completed
+
+- name: Ossec local rules uygulaniyor
+  template:
+    src: "services/local_rules.xml.j2"
+    dest: "{{ ossec_conf_dir }}/rules/local_rules.xml"
+    owner: www-data
+    group: ossec
+    mode: 0754
+  register: ossec_local_rules_completed
+
+
+- name: Ossec init script runlevel uygulanıyor
+  blockinfile:
+    dest: "/etc/init.d/ossec"
+    insertafter: "^#!/bin.*"
+    block: |
+      ### BEGIN INIT INFO
+      # Provides:          ossec
+      # Required-Start:    $all
+      # Required-Stop:
+      # Default-Start:     2 3 4 5
+      # Default-Stop:
+      # Short-Description: ossec
+      ### END INIT INFO
+  register: ossec_init_fix_completed
+  ignore_errors: "{{ ansible_check_mode }}"
+  
+- name: Ossec Servisi tekrar baslatiliyor
+  service:
+    name: "ossec"
+    state: "started"
+    enabled: "yes"
+  when: "{{ (ossec_conf_completed is defined) and (ossec_local_decoder_completed is defined) and (ossec_local_rules_completed is defined) and  (ossec_init_fix_completed is defined) }}"
+  register: ossec_started
+  ignore_errors: "{{ ansible_check_mode }}"

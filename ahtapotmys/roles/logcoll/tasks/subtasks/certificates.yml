@@ -1,0 +1,105 @@
+---
+
+#- name: Bilgi Toplanıyor.. Sertifika dizini varligi kontrol ediliyor
+#  stat:
+#     path: "{{ logcoll_auto_gen_cert_path }}/certs"
+#  register: certs_path
+     
+#- name: Bilgi Toplanıyor.. Anahtar dizini varligi kontrol ediliyor
+#  stat:
+#     path: "{{ logcoll_auto_gen_cert_path }}/private"
+#  register: private_path
+     
+- name: ca-certificates paketi kuruluyor
+  apt:
+    name: ca-certificates
+    update_cache: yes
+    state: latest
+
+- name: RootCA Anahtar varligi kontrol ediliyor
+  stat:
+    path: "{{ logcoll_auto_gen_cert_path }}/private/rootCA.key"
+  register: root_ca_check_result
+
+- name: Root CA icin Anahtar olusturuluyor 
+  command: /usr/bin/openssl genrsa -out {{ logcoll_auto_gen_cert_path }}/private/rootCA.key 2048
+  delegate_to: 127.0.0.1
+  when: root_ca_check_result == False
+
+- name: RootCA PEM varligi kontrol ediliyor
+  stat:
+    path: "{{ logcoll_auto_gen_cert_path }}/certs/rootCA.pem"
+  register: root_ca_pem_check_result
+
+- name: RootCA PEM dosyasi olusturuluyor 
+  command: /usr/bin/openssl req -x509 -new -nodes -key {{ logcoll_auto_gen_cert_path }}/private/rootCA.key -sha256 -days 1024 -out {{ logcoll_auto_gen_cert_path }}/certs/rootCA.pem -subj "/C={{ logcoll_cert_country }}/ST={{ logcoll_cert_state }}/L={{ logcoll_cert_location }}/O={{ logcoll_cert_organization }}/CN={{ logcoll_cert_cn }}"
+  delegate_to: 127.0.0.1
+  when: root_ca_pem_check_result.stat.exists == False
+
+- name: Bilesen Anahtarlari Kontrol ediliyor
+  stat:
+    path: "{{ logcoll_auto_gen_cert_path }}/private/{{ item }}.key"
+#  register: component_key_{{ item.split(".")[0] }}
+  with_items: "{{ logcoll_peers }}"
+
+- name: Ahtapot Bilesenleri icin Log Transfer Anahtarlari olusturuluyor 
+  command: /usr/bin/openssl genrsa -out {{ logcoll_auto_gen_cert_path }}/private/{{ item }}.key 2048
+  delegate_to: 127.0.0.1
+#  when: component_key_{{ item.split(".")[0] }}.stat.exists == False
+  with_items: "{{ logcoll_peers }}"
+
+- name: Bilesen Serialler Kontrol ediliyor
+  stat:
+    path: "{{ logcoll_auto_gen_cert_path }}/certs/{{ item }}.csr"
+#  register: component_serial_{{ item.split(".")[0] }}
+  with_items: "{{ logcoll_peers }}"
+
+- name: Ahtapot Bilesenleri icin Serial istegi yapiliyor 
+  command: /usr/bin/openssl req -new -key {{ logcoll_auto_gen_cert_path }}/private/{{ item }}.key -out {{ logcoll_auto_gen_cert_path }}/certs/{{ item }}.csr -subj "/C={{ logcoll_cert_country }}/ST={{ logcoll_cert_state }}/L={{ logcoll_cert_location }}/O={{ logcoll_cert_organization }}/CN={{ logcoll_cert_cn }}" 
+  delegate_to: 127.0.0.1
+#  when: component_serial_{{ item.split(".")[0] }}.stat.exists == False
+  with_items: "{{ logcoll_peers }}"
+
+- name: Bilesen Sertifikalari Kontrol ediliyor
+  stat:
+    path: "{{ logcoll_auto_gen_cert_path }}/certs/{{ item }}.crt"
+#  register: component_cert_{{ item.split(".")[0] }}
+  with_items: "{{ logcoll_peers }}"
+
+- name: Ahtapot Bilesenleri icin Sertifika istegi yapiliyor 
+  command: /usr/bin/openssl x509 -req -in {{ logcoll_auto_gen_cert_path }}/certs/{{ item }}.csr -CA {{ logcoll_auto_gen_cert_path }}//certs/rootCA.pem -CAkey {{ logcoll_auto_gen_cert_path }}/private/rootCA.key -CAcreateserial -out {{ logcoll_auto_gen_cert_path }}/certs/{{ item }}.crt -days 3650 -sha256
+  delegate_to: 127.0.0.1
+#  when: component_cert_{{ item.split(".")[0] }}.stat.exists == False
+  with_items: "{{ logcoll_peers }}"
+
+- name: Tasima islemi icin sertifika izinleri degistiriliyor
+  command: "chmod -R 755 {{ logcoll_auto_gen_cert_path }}"
+  delegate_to: 127.0.0.1
+
+- name: Sunucu sertifikasi aktariliyor
+  template:
+    src: "{{ logcoll_auto_gen_cert_path }}/certs/{{ ansible_fqdn }}.crt"
+    dest: "/etc/ssl/certs/{{ ansible_fqdn }}.crt"
+    owner: root
+    group: root
+    mode: 644
+
+- name: Root Ca anahtar aktariliyor
+  template:
+    src: "{{ logcoll_auto_gen_cert_path }}/certs/rootCA.pem"
+    dest: "/etc/ssl/certs/rootCA.pem"
+    owner: "root"
+    group: "root"
+    mode: "644"
+    
+- name: Ozel Anahtar Aktariliyor
+  template:
+    src: "{{ logcoll_auto_gen_cert_path }}/private/{{ ansible_fqdn }}.key"
+    dest: "/etc/ssl/private/{{ ansible_fqdn }}.key"
+    owner: "root"
+    group: "root"
+    mode: "644"
+    
+- name: Sertfika izinleri tekrar duzenleniyor
+  command: "chmod -R 644 {{ logcoll_auto_gen_cert_path }}"
+  delegate_to: 127.0.0.1
